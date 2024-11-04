@@ -1,0 +1,9 @@
+channels:
+  - conda-forge
+dependencies:
+  - python
+  - jupyter
+  - pdm
+  - pip
+  - pip:
+      - seqnmf

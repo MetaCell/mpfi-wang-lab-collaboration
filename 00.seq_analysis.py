@@ -67,6 +67,8 @@ seq_ds = xr.merge([F, W, H])
 seq_ds.to_netcdf(os.path.join(OUT_PATH, "seq_ds.nc"))
 
 # %% plotting
+plt_F_nfm = int(5e3)
+plt_ncomp = 10
 seq_ds = xr.open_dataset(os.path.join(OUT_PATH, "seq_ds.nc"))
 F, W, H = seq_ds["F"], seq_ds["W"], seq_ds["H"]
 H = xr.apply_ufunc(
@@ -85,10 +87,17 @@ W = xr.apply_ufunc(
     vectorize=True,
     kwargs={"q": (0, 0.999)},
 )
-fig_F = px.imshow(F)
+fig_F = px.imshow(F.isel(frame=slice(0, plt_F_nfm)))
 fig_F.write_html(os.path.join(FIG_PATH, "F.html"))
 fig_H = px.imshow(H)
 fig_H.write_html(os.path.join(FIG_PATH, "H.html"))
-fig_W = px.imshow(W, facet_col="comp", facet_col_wrap=5, facet_row_spacing=0.01)
-fig_W.update_layout(height=PARAM_NCOMP / 5 * 800)
-fig_W.write_html(os.path.join(FIG_PATH, "W.html"))
+for icomp in range(0, W.sizes["comp"], plt_ncomp):
+    c0, c1 = icomp, icomp + plt_ncomp
+    fig_W = px.imshow(
+        W.isel(comp=slice(c0, c1)),
+        facet_col="comp",
+        facet_col_wrap=5,
+        facet_row_spacing=0.01,
+    )
+    fig_W.update_layout(height=plt_ncomp / 5 * 800)
+    fig_W.write_html(os.path.join(FIG_PATH, "W-{}_{}.html".format(c0, c1)))

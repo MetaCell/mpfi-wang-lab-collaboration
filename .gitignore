@@ -1,3 +1,4 @@
 /data
 /intermediate
 __pycache__
+.ipynb_checkpoints

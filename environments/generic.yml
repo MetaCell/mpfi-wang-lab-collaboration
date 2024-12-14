@@ -4,6 +4,8 @@ dependencies:
   - python
   - jupyter
   - pdm
+  - pytorch-cpu
   - pip
   - pip:
       - seqnmf
+      - git+https://github.com/lindermanlab/ppseq-pytorch.git@main

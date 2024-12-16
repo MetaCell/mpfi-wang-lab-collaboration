@@ -8,7 +8,7 @@ import xarray as xr
 from ppseq.model import PPSeq
 
 from routine.io import load_spks
-from routine.plotting import ppseq_color_plot
+from routine.plotting import ppseq_plot_scatter, ppseq_plot_temp
 from routine.ppseq import thres_int
 
 IN_DPATH = "./data/ANMP215/A215-20230118/04/suite2p/plane0/"
@@ -57,17 +57,7 @@ model = PPSeq(
 lps, amplitudes = model.fit(spk_dat, num_iter=100)
 
 # %% plotting
-temp = model.templates.cpu().detach().numpy()
-temp = xr.DataArray(
-    temp,
-    dims=["temp", "cell", "frame"],
-    coords={
-        "temp": np.arange(temp.shape[0]),
-        "cell": np.arange(temp.shape[1]),
-        "frame": np.arange(temp.shape[2]),
-    },
-)
-fig_temp = px.imshow(temp, facet_col="temp")
+fig_temp = ppseq_plot_temp(spk_dat.cpu(), model, amplitudes.cpu())
 fig_temp.write_html(os.path.join(FIG_PATH, "temps.html"))
-fig_scatter = ppseq_color_plot(spk_dat.cpu(), model, amplitudes.cpu())
+fig_scatter = ppseq_plot_scatter(spk_dat.cpu(), model, amplitudes.cpu())
 fig_scatter.write_html(os.path.join(FIG_PATH, "scatter.html"))

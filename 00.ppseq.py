@@ -1,31 +1,52 @@
 # %% import and definition
-import matplotlib.pyplot as plt
-import pandas as pd
+import os
+
+import numpy as np
+import plotly.express as px
 import torch
+import xarray as xr
 from ppseq.model import PPSeq
-from ppseq.plotting import color_plot, plot_model
+
+from routine.io import load_spks
+from routine.plotting import ppseq_color_plot
+from routine.ppseq import thres_int
+
+IN_DPATH = "./data/ANMP215/A215-20230118/04/suite2p/plane0/"
+INT_PATH = "./intermediate/ppseq"
+FIG_PATH = "./figs/ppseq"
+PARAM_DS = 5
+
+os.makedirs(INT_PATH, exist_ok=True)
+os.makedirs(FIG_PATH, exist_ok=True)
 
 # %% load data
-url = "https://raw.githubusercontent.com/lindermanlab/ppseq-pytorch/main/data/songbird_spikes.txt"
-df = pd.read_csv(url, delimiter="\t", header=None, names=["neuron", "time"])
-list_of_spiketimes = df.groupby("neuron")["time"].apply(list).to_numpy()
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-bin_width = 0.1
-num_timesteps = int(df["time"].max() // bin_width) + 1
-num_neurons = len(list_of_spiketimes)
-data = torch.zeros(num_neurons, num_timesteps, device=device)
-for i, spike_times in enumerate(list_of_spiketimes):
-    for t in spike_times:
-        data[i, int(t // bin_width)] += 1
-data = data[~torch.all(data == 0, dim=1)]
+spks = load_spks(IN_DPATH)
+spks_thres = xr.apply_ufunc(
+    thres_int,
+    spks,
+    input_core_dims=[["frame"]],
+    output_core_dims=[["frame"]],
+    vectorize=True,
+).rename("spks_thres")
+spks_ds = (
+    spks_thres.coarsen({"frame": PARAM_DS}, boundary="trim", coord_func="median")
+    .sum()
+    .rename("spks_ds")
+)
+ds_spks = xr.merge([spks, spks_thres, spks_ds])
+ds_spks.to_netcdf(os.path.join(INT_PATH, "spks_ds.nc"))
 
 # %% ppseq
+ds_spks = xr.load_dataset(os.path.join(INT_PATH, "spks_ds.nc"))
+spk = ds_spks["spks_thres"].dropna("frame", how="all")
+spk = spk.where(spk > 2, other=0)
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+spk_dat = torch.from_numpy(spk.values)
 torch.manual_seed(0)
 model = PPSeq(
-    num_templates=2,
-    num_neurons=num_neurons,
-    template_duration=10,
+    num_templates=1,
+    num_neurons=int(spk.sizes["cell"]),
+    template_duration=150,
     alpha_a0=1.5,
     beta_a0=0.2,
     alpha_b0=1,
@@ -33,8 +54,20 @@ model = PPSeq(
     alpha_t0=1.2,
     beta_t0=0.1,
 )
-lps, amplitudes = model.fit(data, num_iter=100)
+lps, amplitudes = model.fit(spk_dat, num_iter=100)
 
 # %% plotting
-plot_model(model.templates.cpu(), amplitudes.cpu(), data.cpu(), spc=0.33)
-color_plot(data.cpu(), model, amplitudes.cpu())
+temp = model.templates.cpu().detach().numpy()
+temp = xr.DataArray(
+    temp,
+    dims=["temp", "cell", "frame"],
+    coords={
+        "temp": np.arange(temp.shape[0]),
+        "cell": np.arange(temp.shape[1]),
+        "frame": np.arange(temp.shape[2]),
+    },
+)
+fig_temp = px.imshow(temp, facet_col="temp")
+fig_temp.write_html(os.path.join(FIG_PATH, "temps.html"))
+fig_scatter = ppseq_color_plot(spk_dat.cpu(), model, amplitudes.cpu())
+fig_scatter.write_html(os.path.join(FIG_PATH, "scatter.html"))

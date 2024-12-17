@@ -39,11 +39,10 @@ def sort_neurons(prd, mu, return_df=False):
     cls_df["offset"] = offsets
     cls_df = cls_df.sort_values(["cls", "offset"])
     cls_df["ord"] = np.arange(len(cls_df))
-    cls_df = cls_df.sort_values("icell")
     if return_df:
         return cls_df
     else:
-        return np.array(cls_df["ord"])
+        return np.array(cls_df["icell"])
 
 
 def predict(

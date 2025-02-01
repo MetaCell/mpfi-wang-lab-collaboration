@@ -23,6 +23,7 @@ IN_SS_CSV = "./data/sessions.csv"
 INT_PATH = "./intermediate/process_concat"
 FIG_PATH = "./figs/process_concat"
 PARAM_DIST = 5
+PARAM_BASE_Q = 0.05
 
 os.makedirs(INT_PATH, exist_ok=True)
 os.makedirs(FIG_PATH, exist_ok=True)
@@ -30,6 +31,11 @@ os.makedirs(FIG_PATH, exist_ok=True)
 
 def set_window(wnd):
     return wnd == wnd.min()
+
+
+def baseline_sub(sig):
+    base = np.quantile(sig, PARAM_BASE_Q)
+    return sig - base
 
 
 # %% compute templates and shifts
@@ -123,10 +129,17 @@ for anm, Am in A_master.groupby("animal"):
         dat = load_bin(os.path.join(IN_DPATH, ssrow["dpath"]))
         sh = shift_ds["shifts"].sel(animal=anm, session=ss)
         curA = apply_transform(Am, -sh)
-        cur_sig = curA.dot(dat)
+        cur_sig = curA.dot(dat).compute()
+        cur_sig = xr.apply_ufunc(
+            baseline_sub,
+            cur_sig,
+            input_core_dims=[["frame"]],
+            output_core_dims=[["frame"]],
+            vectorize=True,
+        )
         sigs.append(cur_sig)
     sigs = xr.concat(sigs, "frame")
     sigs = sigs.assign_coords(frame=np.arange(sigs.sizes["frame"]))
     sig_master.append(sigs)
-sig_master = xr.concat(sig_master, "animal")
+sig_master = xr.concat(sig_master, "animal").compute()
 sig_master.to_netcdf(os.path.join(INT_PATH, "sig_master.nc"))

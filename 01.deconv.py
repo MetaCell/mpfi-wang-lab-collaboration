@@ -9,8 +9,9 @@ import plotly.express as px
 import xarray as xr
 from minian.cnmf import update_temporal
 
-INT_PATH = "./intermediate/process_concat"
-FIG_PATH = "./figs/process_concat"
+IN_PATH = "./intermediate/concat"
+OUT_PATH = "./intermediate/deconv"
+FIG_PATH = "./figs/deconv"
 MINIAN_INT = "./minian_int"
 PARAM_NCELL_PLT = 10
 
@@ -18,13 +19,13 @@ PARAM_NCELL_PLT = 10
 if __name__ == "__main__":
     shutil.rmtree(MINIAN_INT, ignore_errors=True)
     os.environ["MINIAN_INTERMEDIATE"] = MINIAN_INT
-    os.makedirs(INT_PATH, exist_ok=True)
+    os.makedirs(IN_PATH, exist_ok=True)
     os.makedirs(FIG_PATH, exist_ok=True)
     os.makedirs(MINIAN_INT, exist_ok=True)
-    sig_master = xr.open_dataarray(os.path.join(INT_PATH, "sig_master.nc")).rename(
+    sig_master = xr.open_dataarray(os.path.join(IN_PATH, "sig_master.nc")).rename(
         {"master_uid": "unit_id"}
     )
-    A_master = xr.open_dataarray(os.path.join(INT_PATH, "A_master.nc")).rename(
+    A_master = xr.open_dataarray(os.path.join(IN_PATH, "A_master.nc")).rename(
         {"master_uid": "unit_id"}
     )
     C_ls = []
@@ -62,5 +63,5 @@ if __name__ == "__main__":
         S_ls.append(S_anm)
     C = xr.concat(C_ls, "animal")
     S = xr.concat(S_ls, "animal")
-    C.to_netcdf(os.path.join(INT_PATH, "C.nc"))
-    S.to_netcdf(os.path.join(INT_PATH, "S.nc"))
+    C.to_netcdf(os.path.join(OUT_PATH, "C.nc"))
+    S.to_netcdf(os.path.join(OUT_PATH, "S.nc"))

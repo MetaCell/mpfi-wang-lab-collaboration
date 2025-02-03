@@ -20,8 +20,8 @@ from routine.io import load_bin, load_footprint
 
 IN_DPATH = "./data"
 IN_SS_CSV = "./data/sessions.csv"
-INT_PATH = "./intermediate/process_concat"
-FIG_PATH = "./figs/process_concat"
+INT_PATH = "./intermediate/concat"
+FIG_PATH = "./figs/concat"
 PARAM_DIST = 5
 PARAM_BASE_Q = 0.05
 

@@ -9,8 +9,12 @@ from ds_utils.utils.num import thres_gmm
 
 def thres_int(a):
     a_th = thres_gmm(a, ncom=3)
-    s_amp = np.unique(a_th)[1]
-    return np.around(a_th / s_amp)
+    spks = a_th[a_th > 0]
+    if len(spks) > 0:
+        s_amp = np.sort(np.unique(a_th))[1]
+        return np.around(a_th / s_amp)
+    else:
+        return a_th
 
 
 def classify_neurons(prd):

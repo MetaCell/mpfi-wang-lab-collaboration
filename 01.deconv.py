@@ -20,6 +20,7 @@ if __name__ == "__main__":
     shutil.rmtree(MINIAN_INT, ignore_errors=True)
     os.environ["MINIAN_INTERMEDIATE"] = MINIAN_INT
     os.makedirs(IN_PATH, exist_ok=True)
+    os.makedirs(OUT_PATH, exist_ok=True)
     os.makedirs(FIG_PATH, exist_ok=True)
     os.makedirs(MINIAN_INT, exist_ok=True)
     sig_master = xr.open_dataarray(os.path.join(IN_PATH, "sig_master.nc")).rename(

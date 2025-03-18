@@ -1,3 +1,5 @@
+import itertools as itt
+
 import matplotlib.pyplot as plt
 import numpy as np
 import plotly.express as px
@@ -40,7 +42,7 @@ def ppseq_plot_scatter(
     else:
         plt_raw = False
     color_indices = [np.argwhere(prd == i - 1) for i in range(K + 1)]
-    pallete = ["grey"] + pallete
+    pallete = ["grey"] + list(itt.islice(itt.cycle(pallete), K))
     # plotting
     fig = make_subplots(
         rows=3 if plt_raw else 2,
